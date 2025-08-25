@@ -556,25 +556,23 @@ export function ReceiveAlc2DataInquiryViewClient() {
       <Backdrop
         sx={{ 
           zIndex: (theme) => theme.zIndex.modal + 1,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backgroundColor: 'rgba(0, 0, 0, 0.4)',
         }}
         open={receiveAlc2DataLoading}
       >
         <Box 
           sx={{ 
             display: 'flex', 
-            flexDirection: 'column', 
             alignItems: 'center', 
             gap: 2,
-            backgroundColor: 'white',
-            padding: 3,
-            borderRadius: 2,
-            boxShadow: 2,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            padding: 2,
+            borderRadius: 1,
           }}
         >
-          <CircularProgress size={40} />
-          <Typography variant="body1" sx={{ color: 'text.primary' }}>
-            데이터 조회 중...
+          <CircularProgress size={28} />
+          <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+            조회 중...
           </Typography>
         </Box>
       </Backdrop>
