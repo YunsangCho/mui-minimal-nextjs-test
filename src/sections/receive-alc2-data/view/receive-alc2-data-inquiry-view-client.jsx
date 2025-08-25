@@ -75,8 +75,8 @@ export function ReceiveAlc2DataInquiryViewClient() {
   const { currentSite } = useWorkspace();
 
   const { state: filters, setState: setFilters } = useSetState(defaultFilters);
-  const [searchFilters, setSearchFilters] = useState(null);
-  const [hasSearched, setHasSearched] = useState(false);
+  const [searchFilters, setSearchFilters] = useState(defaultFilters);
+  const [hasSearched, setHasSearched] = useState(true);
   const [dense, setDense] = useState(true);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailRow, setDetailRow] = useState(null);
@@ -108,8 +108,8 @@ export function ReceiveAlc2DataInquiryViewClient() {
 
   const handleResetFilters = useCallback(() => {
     setFilters(defaultFilters);
-    setSearchFilters(null);
-    setHasSearched(false);
+    setSearchFilters(defaultFilters);
+    setHasSearched(true);
   }, [setFilters]);
 
   const handleSearch = useCallback((serverFilters) => {
