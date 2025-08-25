@@ -1,4 +1,5 @@
-import { Box, Stack, Typography, Dialog, DialogTitle, DialogContent, IconButton, Chip } from '@mui/material';
+import { useState } from 'react';
+import { Box, Stack, Typography, Dialog, DialogTitle, DialogContent, IconButton, Chip, Tabs, Tab, Backdrop } from '@mui/material';
 import { Iconify } from 'src/components/iconify';
 
 // ------------------------------------------------------------------
@@ -81,110 +82,284 @@ function formatDate(dateStr) {
 
 // ------------------------------------------------------------------
 
+function TabPanel({ children, value, index, ...other }) {
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`detail-tabpanel-${index}`}
+      aria-labelledby={`detail-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ py: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  );
+}
+
 export function ReceiveAlc2DataDetailDialog({ open, onClose, row }) {
+  const [tabValue, setTabValue] = useState(0);
+
   if (!row) return null;
 
   const handleClose = () => {
     onClose();
   };
 
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
+  };
+
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ pb: 2 }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Typography variant="h6">서열수신 상세정보</Typography>
-          <IconButton onClick={handleClose}>
-            <Iconify icon="mingcute:close-line" />
-          </IconButton>
-        </Stack>
-      </DialogTitle>
+    <>
+      {/* 개선된 백그라운드 */}
+      <Backdrop
+        sx={{ 
+          zIndex: (theme) => theme.zIndex.modal - 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backdropFilter: 'blur(2px)',
+        }}
+        open={open}
+      />
+      
+      <Dialog 
+        open={open} 
+        onClose={handleClose} 
+        maxWidth="lg" 
+        fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            backgroundColor: 'white',
+            boxShadow: 24,
+            borderRadius: 2,
+            maxHeight: '80vh',
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 600 }}>서열수신 상세정보</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                {row.BODY_NO} • {row.VIN_NO}
+              </Typography>
+            </Box>
+            <IconButton 
+              onClick={handleClose}
+              sx={{ 
+                backgroundColor: 'grey.100',
+                '&:hover': { backgroundColor: 'grey.200' }
+              }}
+            >
+              <Iconify icon="mingcute:close-line" />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
 
-      <DialogContent>
-        <Stack spacing={3}>
-          {/* 기본 정보 */}
-          <Box>
-            <Typography variant="h6" sx={{ mb: 2 }}>기본 정보</Typography>
-            <Stack spacing={2}>
-              <Stack direction="row" spacing={2}>
-                <Box sx={{ minWidth: 120 }}>
-                  <Typography variant="subtitle2" color="text.secondary">생산일시</Typography>
-                  <Typography variant="body2">{formatDateTime(row.PROD_DTTM)}</Typography>
+        {/* 탭 네비게이션 */}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', backgroundColor: 'grey.50' }}>
+          <Tabs 
+            value={tabValue} 
+            onChange={handleTabChange}
+            sx={{ px: 3 }}
+          >
+            <Tab 
+              label="주요정보" 
+              icon={<Iconify icon="solar:info-circle-bold" />}
+              iconPosition="start"
+            />
+            <Tab 
+              label="상세정보" 
+              icon={<Iconify icon="solar:document-text-bold" />}
+              iconPosition="start"
+            />
+            <Tab 
+              label="작업상태" 
+              icon={<Iconify icon="solar:settings-bold" />}
+              iconPosition="start"
+            />
+          </Tabs>
+        </Box>
+
+        <DialogContent sx={{ p: 0 }}>
+          {/* 주요정보 탭 */}
+          <TabPanel value={tabValue} index={0}>
+            <Box sx={{ px: 3 }}>
+              <Stack spacing={3}>
+                {/* 핵심 식별 정보 */}
+                <Box sx={{ 
+                  p: 3, 
+                  backgroundColor: 'primary.lighter', 
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: 'primary.light'
+                }}>
+                  <Typography variant="h6" sx={{ mb: 2, color: 'primary.dark' }}>핵심 식별정보</Typography>
+                  <Stack direction="row" spacing={4} flexWrap="wrap">
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary">차체번호</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                        {row.BODY_NO}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary">VIN번호</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                        {row.VIN_NO}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary">커밋번호</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                        {row.COMMIT_NO}
+                      </Typography>
+                    </Box>
+                  </Stack>
                 </Box>
-                <Box sx={{ minWidth: 120 }}>
-                  <Typography variant="subtitle2" color="text.secondary">커밋번호</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{row.COMMIT_NO}</Typography>
+
+                {/* 생산 정보 */}
+                <Box>
+                  <Typography variant="h6" sx={{ mb: 2 }}>생산 정보</Typography>
+                  <Stack direction="row" spacing={3} flexWrap="wrap">
+                    <Box sx={{ minWidth: 200 }}>
+                      <Typography variant="subtitle2" color="text.secondary">생산일시</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                        {formatDateTime(row.PROD_DTTM)}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ minWidth: 150 }}>
+                      <Typography variant="subtitle2" color="text.secondary">생산일자</Typography>
+                      <Typography variant="body1">{formatDate(row.PROD_DATE)}</Typography>
+                    </Box>
+                    <Box sx={{ minWidth: 150 }}>
+                      <Typography variant="subtitle2" color="text.secondary">차체타입</Typography>
+                      <Typography variant="body1">{row.BODY_TYPE}</Typography>
+                    </Box>
+                  </Stack>
                 </Box>
-                <Box sx={{ minWidth: 120 }}>
-                  <Typography variant="subtitle2" color="text.secondary">데이터 소스</Typography>
-                  <DataSourceChip value={row.DATA_SOURCE} />
+
+                {/* 상태 정보 */}
+                <Box>
+                  <Typography variant="h6" sx={{ mb: 2 }}>상태 정보</Typography>
+                  <Stack direction="row" spacing={3} alignItems="center">
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>작업 플래그</Typography>
+                      <WorkFlagChip value={row.WORK_FLAG} />
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>조립완료</Typography>
+                      <AssemblyChip value={row.ASSEMBLY_COMPLETE} />
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>데이터 소스</Typography>
+                      <DataSourceChip value={row.DATA_SOURCE} />
+                    </Box>
+                  </Stack>
                 </Box>
               </Stack>
+            </Box>
+          </TabPanel>
 
-              <Stack direction="row" spacing={2}>
-                <Box sx={{ minWidth: 120 }}>
-                  <Typography variant="subtitle2" color="text.secondary">차체번호</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{row.BODY_NO}</Typography>
+          {/* 상세정보 탭 */}
+          <TabPanel value={tabValue} index={1}>
+            <Box sx={{ px: 3 }}>
+              <Stack spacing={3}>
+                {/* ALC 정보 */}
+                <Box sx={{ 
+                  p: 3, 
+                  backgroundColor: 'success.lighter', 
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: 'success.light'
+                }}>
+                  <Typography variant="h6" sx={{ mb: 2, color: 'success.dark' }}>ALC 정보</Typography>
+                  <Stack direction="row" spacing={4}>
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary">ALC 전면</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 500 }}>{row.ALC_FRONT}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary">ALC 후면</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 500 }}>{row.ALC_REAR}</Typography>
+                    </Box>
+                  </Stack>
                 </Box>
-                <Box sx={{ minWidth: 120 }}>
-                  <Typography variant="subtitle2" color="text.secondary">차체타입</Typography>
-                  <Typography variant="body2">{row.BODY_TYPE}</Typography>
+
+                {/* 외관 정보 */}
+                <Box>
+                  <Typography variant="h6" sx={{ mb: 2 }}>외관 정보</Typography>
+                  <Stack direction="row" spacing={4}>
+                    <Box sx={{ minWidth: 200 }}>
+                      <Typography variant="subtitle2" color="text.secondary">외장색상</Typography>
+                      <Typography variant="body1">{row.EXT_COLOR}</Typography>
+                    </Box>
+                  </Stack>
                 </Box>
-                <Box sx={{ minWidth: 120 }}>
-                  <Typography variant="subtitle2" color="text.secondary">VIN번호</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{row.VIN_NO}</Typography>
+
+                {/* 시스템 정보 */}
+                <Box>
+                  <Typography variant="h6" sx={{ mb: 2 }}>시스템 정보</Typography>
+                  <Stack direction="row" spacing={4}>
+                    <Box sx={{ minWidth: 200 }}>
+                      <Typography variant="subtitle2" color="text.secondary">MES 연동</Typography>
+                      <Typography variant="body1">{row.MES_IF}</Typography>
+                    </Box>
+                  </Stack>
                 </Box>
               </Stack>
+            </Box>
+          </TabPanel>
 
-              <Stack direction="row" spacing={2}>
-                <Box sx={{ minWidth: 120 }}>
-                  <Typography variant="subtitle2" color="text.secondary">생산일자</Typography>
-                  <Typography variant="body2">{formatDate(row.PROD_DATE)}</Typography>
+          {/* 작업상태 탭 */}
+          <TabPanel value={tabValue} index={2}>
+            <Box sx={{ px: 3 }}>
+              <Stack spacing={3}>
+                {/* 작업 진행 상황 */}
+                <Box sx={{ 
+                  p: 3, 
+                  backgroundColor: 'warning.lighter', 
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: 'warning.light'
+                }}>
+                  <Typography variant="h6" sx={{ mb: 3, color: 'warning.dark' }}>작업 진행 상황</Typography>
+                  <Stack spacing={3}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="subtitle1" sx={{ minWidth: 120 }}>작업 플래그:</Typography>
+                      <WorkFlagChip value={row.WORK_FLAG} />
+                      <Typography variant="body2" color="text.secondary">
+                        {row.WORK_FLAG === 'T' ? '모든 작업이 완료되었습니다.' : '작업이 진행 중입니다.'}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="subtitle1" sx={{ minWidth: 120 }}>조립 상태:</Typography>
+                      <AssemblyChip value={row.ASSEMBLY_COMPLETE} />
+                      <Typography variant="body2" color="text.secondary">
+                        {row.ASSEMBLY_COMPLETE === '완료' ? '조립 공정이 완료되었습니다.' : '조립 공정이 진행 중입니다.'}
+                      </Typography>
+                    </Box>
+                  </Stack>
                 </Box>
-                <Box sx={{ minWidth: 120 }}>
-                  <Typography variant="subtitle2" color="text.secondary">외장색상</Typography>
-                  <Typography variant="body2">{row.EXT_COLOR}</Typography>
-                </Box>
-                <Box sx={{ minWidth: 120 }}>
-                  <Typography variant="subtitle2" color="text.secondary">MES 연동</Typography>
-                  <Typography variant="body2">{row.MES_IF}</Typography>
+
+                {/* 데이터 정보 */}
+                <Box>
+                  <Typography variant="h6" sx={{ mb: 2 }}>데이터 정보</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle1" sx={{ minWidth: 120 }}>데이터 소스:</Typography>
+                    <DataSourceChip value={row.DATA_SOURCE} />
+                    <Typography variant="body2" color="text.secondary">
+                      {row.DATA_SOURCE === 'LIVE' ? '실시간 운영 데이터입니다.' : '백업 데이터입니다.'}
+                    </Typography>
+                  </Box>
                 </Box>
               </Stack>
-            </Stack>
-          </Box>
-
-          {/* ALC 정보 */}
-          <Box>
-            <Typography variant="h6" sx={{ mb: 2 }}>ALC 정보</Typography>
-            <Stack spacing={2}>
-              <Stack direction="row" spacing={2}>
-                <Box sx={{ minWidth: 120 }}>
-                  <Typography variant="subtitle2" color="text.secondary">ALC 전면</Typography>
-                  <Typography variant="body2">{row.ALC_FRONT}</Typography>
-                </Box>
-                <Box sx={{ minWidth: 120 }}>
-                  <Typography variant="subtitle2" color="text.secondary">ALC 후면</Typography>
-                  <Typography variant="body2">{row.ALC_REAR}</Typography>
-                </Box>
-              </Stack>
-            </Stack>
-          </Box>
-
-          {/* 작업 상태 */}
-          <Box>
-            <Typography variant="h6" sx={{ mb: 2 }}>작업 상태</Typography>
-            <Stack direction="row" spacing={2}>
-              <Box sx={{ minWidth: 120 }}>
-                <Typography variant="subtitle2" color="text.secondary">작업 플래그</Typography>
-                <WorkFlagChip value={row.WORK_FLAG} />
-              </Box>
-              <Box sx={{ minWidth: 120 }}>
-                <Typography variant="subtitle2" color="text.secondary">조립완료</Typography>
-                <AssemblyChip value={row.ASSEMBLY_COMPLETE} />
-              </Box>
-            </Stack>
-          </Box>
-        </Stack>
-      </DialogContent>
-    </Dialog>
+            </Box>
+          </TabPanel>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
