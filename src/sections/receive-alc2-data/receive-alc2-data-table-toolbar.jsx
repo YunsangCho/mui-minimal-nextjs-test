@@ -11,8 +11,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
-import Chip from '@mui/material/Chip';
-import Badge from '@mui/material/Badge';
+
 import Button from '@mui/material/Button';
 import LoadingButton from '@mui/lab/LoadingButton';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -121,19 +120,7 @@ export function ReceiveAlc2DataTableToolbar({ filters, onFilters, dateError, onS
     }
       }, [currentSite, loadBodyTypes]);
 
-  // 활성 필터 개수 계산 최적화
-  const activeFiltersCount = useMemo(() => {
-    if (isDetailedSearch) {
-      return [filters.vinNo, filters.bodyNo].filter(Boolean).length;
-    } else {
-      return [
-        filters.startDate && filters.endDate ? 'dateRange' : null,
-        filters.bodyType,
-        filters.commitNoStart,
-        filters.commitNoEnd
-      ].filter(Boolean).length;
-    }
-  }, [isDetailedSearch, filters.startDate, filters.endDate, filters.bodyType, filters.commitNoStart, filters.commitNoEnd, filters.vinNo, filters.bodyNo]);
+
 
   // 검색 가능 여부 확인
   const canSearch = useMemo(() => {
@@ -229,25 +216,6 @@ export function ReceiveAlc2DataTableToolbar({ filters, onFilters, dateError, onS
           <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
             검색 필터
           </Typography>
-          {activeFiltersCount > 0 && (
-            <Badge 
-              badgeContent={activeFiltersCount} 
-              color="primary"
-              sx={{
-                '& .MuiBadge-badge': {
-                  right: -3,
-                  top: 3,
-                }
-              }}
-            >
-              <Chip 
-                size="small" 
-                label="활성" 
-                color="primary" 
-                variant="outlined"
-              />
-            </Badge>
-          )}
         </Stack>
         
         {/* 상세조건 토글 */}
@@ -692,7 +660,7 @@ export function ReceiveAlc2DataTableToolbar({ filters, onFilters, dateError, onS
               {isLoading ? '조회 중' : '조회'}
             </LoadingButton>
             
-            {activeFiltersCount > 0 && (
+            {(filters.startDate || filters.endDate || filters.bodyType || filters.commitNoStart || filters.commitNoEnd) && (
               <Button
                 variant="outlined"
                 onClick={() => {
@@ -880,7 +848,7 @@ export function ReceiveAlc2DataTableToolbar({ filters, onFilters, dateError, onS
                   {isLoading ? '조회 중' : '조회'}
                 </LoadingButton>
                 
-                {activeFiltersCount > 0 && (
+                {(filters.vinNo || filters.bodyNo) && (
                   <Button
                     variant="outlined"
                     onClick={() => {
