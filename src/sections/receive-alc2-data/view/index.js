@@ -1,0 +1,1 @@
+export { ReceiveAlc2DataInquiryView } from './receive-alc2-data-inquiry-view'; 
