@@ -110,12 +110,15 @@ export function ReceiveAlc2DataInquiryViewClient() {
 
   const { receiveAlc2Data, receiveAlc2DataLoading, receiveAlc2DataEmpty, pagination } = useGetReceiveAlc2Data(searchFilters, currentSite);
   
-  // 첫 페이지에서 totalCount 캐시 업데이트
+  // totalCount 캐시 업데이트 - 첫 페이지이거나 캐시가 없을 때만
   useEffect(() => {
-    if (pagination?.totalCount && searchFilters.page === 1) {
-      setCachedTotalCount(pagination.totalCount);
+    if (pagination?.totalCount) {
+      // 첫 페이지이거나, 캐시된 값이 없을 때만 업데이트
+      if (searchFilters.page === 1 || cachedTotalCount === 0) {
+        setCachedTotalCount(pagination.totalCount);
+      }
     }
-  }, [pagination?.totalCount, searchFilters.page]);
+  }, [pagination?.totalCount, searchFilters.page, cachedTotalCount]);
 
   const handleFilters = useCallback(
     (name, value) => {
@@ -135,7 +138,10 @@ export function ReceiveAlc2DataInquiryViewClient() {
     if (currentSite) {
       setSearchFilters(serverFilters);
       setHasSearched(true);
-      setCachedTotalCount(0); // 새로운 검색 시 캐시 초기화
+      // 새로운 검색 조건이라면 캐시 초기화 (페이지는 1로 리셋)
+      if (serverFilters.page === 1) {
+        setCachedTotalCount(0);
+      }
     }
   }, [currentSite]);
 
