@@ -17,6 +17,9 @@ import TableCell from '@mui/material/TableCell';
 import Typography from '@mui/material/Typography';
 import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
 
 import { useSetState } from 'src/hooks/use-set-state';
 import { useWorkspace } from 'src/contexts/workspace-context';
@@ -296,10 +299,22 @@ export function ReceiveAlc2DataInquiryViewClient() {
     setDownloadProgress(prev => ({ ...prev, open: false }));
   }, []);
 
-  const renderTable = () => (
-    <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
-      <TableContainer sx={{ overflow: 'auto', maxHeight: 640, '&::-webkit-scrollbar': { width: 8, height: 8 }, '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 4 } }}>
-        <Table size={dense ? 'small' : 'medium'} stickyHeader>
+  const renderTable = () => {
+    const { totalCount } = pagination || {};
+    const startRecord = totalCount > 0 ? ((pagination?.page || 1) - 1) * (pagination?.pageSize || 25) + 1 : 0;
+    const endRecord = Math.min((pagination?.page || 1) * (pagination?.pageSize || 25), totalCount || 0);
+
+    return (
+      <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+        {/* 조회건수 표시 */}
+        <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.neutral' }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+            조회 결과: {`${startRecord}–${endRecord} / 전체 ${totalCount || 0}건`}
+          </Typography>
+        </Box>
+        
+        <TableContainer sx={{ overflow: 'auto', maxHeight: 640, '&::-webkit-scrollbar': { width: 8, height: 8 }, '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 4 } }}>
+          <Table size={dense ? 'small' : 'medium'} stickyHeader>
           <TableHead>
             <TableRow>
               {TABLE_HEAD.map((headCell) => (
@@ -326,7 +341,8 @@ export function ReceiveAlc2DataInquiryViewClient() {
         </Table>
       </TableContainer>
     </Paper>
-  );
+    );
+  };
 
   const renderPagination = () => {
     if (!pagination) return null;
@@ -347,6 +363,18 @@ export function ReceiveAlc2DataInquiryViewClient() {
             label="컴팩트 모드"
             sx={{ ml: 2 }}
           />
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <Select
+              value={pageSize}
+              onChange={(e) => handlePageSizeChange(e.target.value)}
+              displayEmpty
+              sx={{ height: 32 }}
+            >
+              <MenuItem value={25}>25건씩 조회</MenuItem>
+              <MenuItem value={50}>50건씩 조회</MenuItem>
+              <MenuItem value={100}>100건씩 조회</MenuItem>
+            </Select>
+          </FormControl>
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
