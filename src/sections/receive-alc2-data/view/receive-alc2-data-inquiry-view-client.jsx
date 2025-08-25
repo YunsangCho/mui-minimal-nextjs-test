@@ -307,13 +307,50 @@ export function ReceiveAlc2DataInquiryViewClient() {
     return (
       <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
         {/* 조회건수 표시 */}
-        <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.neutral' }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-            조회 결과: {`${startRecord}–${endRecord} / 전체 ${totalCount || 0}건`}
+        <Box sx={{ 
+          p: 2, 
+          borderBottom: '1px solid', 
+          borderColor: 'divider', 
+          bgcolor: 'grey.50',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <Box sx={{ 
+            width: 8, 
+            height: 8, 
+            borderRadius: '50%', 
+            bgcolor: 'primary.main' 
+          }} />
+          <Typography variant="body2" sx={{ 
+            fontWeight: 600, 
+            color: 'text.primary',
+            fontSize: '0.875rem'
+          }}>
+            조회 결과
+          </Typography>
+          <Typography variant="body2" sx={{ 
+            color: 'text.secondary',
+            fontSize: '0.875rem'
+          }}>
+            {`${startRecord}–${endRecord}`}
+          </Typography>
+          <Typography variant="body2" sx={{ 
+            color: 'text.disabled',
+            fontSize: '0.875rem'
+          }}>
+            /
+          </Typography>
+          <Typography variant="body2" sx={{ 
+            fontWeight: 500,
+            color: 'primary.main',
+            fontSize: '0.875rem'
+          }}>
+            {`전체 ${totalCount || 0}건`}
           </Typography>
         </Box>
         
-        <TableContainer sx={{ overflow: 'auto', maxHeight: 640, '&::-webkit-scrollbar': { width: 8, height: 8 }, '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 4 } }}>
+        <TableContainer sx={{ overflow: 'auto', maxHeight: 320, '&::-webkit-scrollbar': { width: 8, height: 8 }, '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 4 } }}>
           <Table size={dense ? 'small' : 'medium'} stickyHeader>
           <TableHead>
             <TableRow>
@@ -363,6 +400,9 @@ export function ReceiveAlc2DataInquiryViewClient() {
             label="컴팩트 모드"
             sx={{ ml: 2 }}
           />
+        </Box>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <Select
               value={pageSize}
@@ -375,9 +415,8 @@ export function ReceiveAlc2DataInquiryViewClient() {
               <MenuItem value={100}>100건씩 조회</MenuItem>
             </Select>
           </FormControl>
-        </Box>
-
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Tooltip title="첫 페이지">
             <IconButton onClick={handleFirstPage} size="small" disabled={!hasPreviousPage}>
               <Iconify icon="material-symbols:first-page" />
@@ -403,6 +442,7 @@ export function ReceiveAlc2DataInquiryViewClient() {
               <Iconify icon="material-symbols:last-page" />
             </IconButton>
           </Tooltip>
+          </Box>
         </Box>
       </Box>
     );
