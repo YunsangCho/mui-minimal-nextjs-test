@@ -140,6 +140,8 @@ if (typeof window === 'undefined') {
           min: 0,
           idleTimeoutMillis: 30000,
         },
+        requestTimeout: 600000, // 10분 타임아웃 (대용량 데이터용)
+        connectionTimeout: 60000, // 1분 연결 타임아웃
       },
       '시흥2조립장': {
         user: process.env.DB_USER_SH2 || 'sa',
@@ -157,6 +159,8 @@ if (typeof window === 'undefined') {
           min: 0,
           idleTimeoutMillis: 30000,
         },
+        requestTimeout: 600000, // 10분 타임아웃 (대용량 데이터용)
+        connectionTimeout: 60000, // 1분 연결 타임아웃
       },
       '화성조립장': {
         user: process.env.DB_USER_HS || 'mesuser',
@@ -174,6 +178,8 @@ if (typeof window === 'undefined') {
           min: 0,
           idleTimeoutMillis: 30000,
         },
+        requestTimeout: 600000, // 10분 타임아웃 (대용량 데이터용)
+        connectionTimeout: 60000, // 1분 연결 타임아웃
       },
       '서산조립장': {
         user: process.env.DB_USER_SS || 'mesuser',
@@ -191,6 +197,8 @@ if (typeof window === 'undefined') {
           min: 0,
           idleTimeoutMillis: 30000,
         },
+        requestTimeout: 600000, // 10분 타임아웃 (대용량 데이터용)
+        connectionTimeout: 60000, // 1분 연결 타임아웃
       },
     };
 

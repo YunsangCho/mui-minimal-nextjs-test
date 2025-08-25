@@ -192,6 +192,12 @@ export function ReceiveAlc2DataInquiryViewClient() {
         if (downloadProgress.cancelled) {
           break;
         }
+        
+        // 안전장치: 최대 50개 청크 (50,000건) 제한 제거
+        if (currentChunk > 200) {
+          console.warn(`최대 청크 수 도달: ${currentChunk}`);
+          break;
+        }
 
         const params = new URLSearchParams();
         params.append('site', currentSite);
@@ -224,9 +230,17 @@ export function ReceiveAlc2DataInquiryViewClient() {
 
         const { data, chunk, totalCount } = response.data;
         
+        console.log(`📊 청크 ${currentChunk} 응답:`, {
+          dataLength: data.length,
+          hasMore: chunk.hasMore,
+          totalCount: currentChunk === 1 ? totalCount : 'N/A',
+          currentTotal: allData.length + data.length
+        });
+        
         if (currentChunk === 1) {
           totalRecords = totalCount || 0;
           totalChunks = Math.ceil(totalRecords / chunkSize);
+          console.log(`📊 전체 레코드: ${totalRecords}, 예상 청크: ${totalChunks}`);
         }
 
         allData = [...allData, ...data];
@@ -245,6 +259,12 @@ export function ReceiveAlc2DataInquiryViewClient() {
         }));
 
         if (data.length === 0 || !chunk.hasMore || data.length < chunkSize) {
+          console.log(`📊 다운로드 완료 - 이유:`, {
+            dataEmpty: data.length === 0,
+            noMore: !chunk.hasMore,
+            partialChunk: data.length < chunkSize,
+            totalDownloaded: allData.length
+          });
           break;
         }
 
@@ -306,7 +326,7 @@ export function ReceiveAlc2DataInquiryViewClient() {
 
     return (
       <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
-        {/* 조회건수 표시 */}
+        {/* 조회건수 표시 및 버튼 영역 */}
         <Box sx={{ 
           p: 2, 
           borderBottom: '1px solid', 
@@ -314,43 +334,59 @@ export function ReceiveAlc2DataInquiryViewClient() {
           bgcolor: 'grey.50',
           display: 'flex',
           alignItems: 'center',
-          gap: 1
+          justifyContent: 'space-between'
         }}>
-          <Box sx={{ 
-            width: 8, 
-            height: 8, 
-            borderRadius: '50%', 
-            bgcolor: 'primary.main' 
-          }} />
-          <Typography variant="body2" sx={{ 
-            fontWeight: 600, 
-            color: 'text.primary',
-            fontSize: '0.875rem'
-          }}>
-            조회 결과
-          </Typography>
-          <Typography variant="body2" sx={{ 
-            color: 'text.secondary',
-            fontSize: '0.875rem'
-          }}>
-            {`${startRecord}–${endRecord}`}
-          </Typography>
-          <Typography variant="body2" sx={{ 
-            color: 'text.disabled',
-            fontSize: '0.875rem'
-          }}>
-            /
-          </Typography>
-          <Typography variant="body2" sx={{ 
-            fontWeight: 500,
-            color: 'primary.main',
-            fontSize: '0.875rem'
-          }}>
-            {`전체 ${totalCount || 0}건`}
-          </Typography>
+          {/* 좌측: 조회결과 텍스트 */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ 
+              width: 8, 
+              height: 8, 
+              borderRadius: '50%', 
+              bgcolor: 'primary.main' 
+            }} />
+            <Typography variant="body2" sx={{ 
+              fontWeight: 600, 
+              color: 'text.primary',
+              fontSize: '0.875rem'
+            }}>
+              조회 결과
+            </Typography>
+            <Typography variant="body2" sx={{ 
+              color: 'text.secondary',
+              fontSize: '0.875rem'
+            }}>
+              {`${startRecord}–${endRecord}`}
+            </Typography>
+            <Typography variant="body2" sx={{ 
+              color: 'text.disabled',
+              fontSize: '0.875rem'
+            }}>
+              /
+            </Typography>
+            <Typography variant="body2" sx={{ 
+              fontWeight: 500,
+              color: 'primary.main',
+              fontSize: '0.875rem'
+            }}>
+              {`전체 ${totalCount || 0}건`}
+            </Typography>
+          </Box>
+          
+          {/* 우측: 버튼 영역 */}
+          <Button
+            variant="contained"
+            color="success"
+            size="small"
+            startIcon={<Iconify icon="eva:download-fill" />}
+            onClick={handleExcelDownload}
+            disabled={receiveAlc2DataLoading || receiveAlc2DataEmpty}
+            sx={{ minWidth: 120 }}
+          >
+            엑셀 다운로드
+          </Button>
         </Box>
         
-        <TableContainer sx={{ overflow: 'auto', maxHeight: 320, '&::-webkit-scrollbar': { width: 8, height: 8 }, '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 4 } }}>
+        <TableContainer sx={{ overflow: 'auto', maxHeight: 384, '&::-webkit-scrollbar': { width: 8, height: 8 }, '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 4 } }}>
           <Table size={dense ? 'small' : 'medium'} stickyHeader>
           <TableHead>
             <TableRow>
@@ -459,20 +495,7 @@ export function ReceiveAlc2DataInquiryViewClient() {
         currentSite={currentSite}
       />
 
-      {hasSearched && (
-        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box />
-          <Button
-            variant="contained"
-            color="success"
-            startIcon={<Iconify icon="eva:download-fill" />}
-            onClick={handleExcelDownload}
-            disabled={receiveAlc2DataLoading || receiveAlc2DataEmpty}
-          >
-            엑셀 다운로드
-          </Button>
-        </Box>
-      )}
+
 
       {hasSearched && renderTable()}
       {hasSearched && renderPagination()}

@@ -207,7 +207,9 @@ export function ReceiveAlc2DataTableToolbar({ filters, onFilters, dateError, onS
       elevation={0}
       sx={{
         p: 1.5,
-        m: 2,
+        mx: 2,
+        //mt: 0.05,
+        //mb: 0.175,
         borderRadius: 2,
         bgcolor: 'background.neutral',
         border: (theme) => `1px solid ${theme.palette.divider}`,
@@ -797,11 +799,6 @@ export function ReceiveAlc2DataTableToolbar({ filters, onFilters, dateError, onS
                       </InputAdornment>
                     ),
                   }}
-                  helperText={
-                    filters.vinNo && filters.vinNo.length !== 17 
-                      ? `현재 ${filters.vinNo.length}자리 (17자리 필요)` 
-                      : filters.vinNo ? '✓ 17자리 완성' : ''
-                  }
                   error={filters.vinNo && filters.vinNo.length > 0 && filters.vinNo.length !== 17}
                 />
               </Box>
@@ -856,11 +853,6 @@ export function ReceiveAlc2DataTableToolbar({ filters, onFilters, dateError, onS
                       </InputAdornment>
                     ),
                   }}
-                  helperText={
-                    filters.bodyNo && filters.bodyNo.length !== 10 
-                      ? `현재 ${filters.bodyNo.length}자리 (10자리 필요)` 
-                      : filters.bodyNo ? '✓ 10자리 완성' : ''
-                  }
                   error={filters.bodyNo && filters.bodyNo.length > 0 && filters.bodyNo.length !== 10}
                 />
               </Box>

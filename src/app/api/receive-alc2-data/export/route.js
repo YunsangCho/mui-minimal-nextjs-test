@@ -17,7 +17,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const site = searchParams.get('site');
     const chunk = parseInt(searchParams.get('chunk') || '1', 10);
-    const chunkSize = parseInt(searchParams.get('chunkSize') || '1000', 10);
+    let chunkSize = parseInt(searchParams.get('chunkSize') || '1000', 10);
     const isDetailedSearch = searchParams.get('isDetailedSearch') === 'true';
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
@@ -124,7 +124,18 @@ export async function GET(request) {
     const offset = (chunk - 1) * chunkSize;
     
     console.log(`📊 페이징 정보: chunk=${chunk}, chunkSize=${chunkSize}, offset=${offset}`);
+    
+    // 안전장치: SQL Server의 기본 제한 확인
+    if (offset > 1000000) {
+      console.warn(`⚠️ 매우 큰 OFFSET 값: ${offset}`);
+    }
+    
+    if (chunkSize > 10000) {
+      console.warn(`⚠️ 매우 큰 chunkSize 값: ${chunkSize}, 1000으로 제한`);
+      chunkSize = Math.min(chunkSize, 1000);
+    }
 
+    // 대용량 데이터 처리를 위한 최적화된 쿼리
     const dataQuery = `
       WITH CombinedData AS (
         SELECT 
@@ -136,7 +147,8 @@ export async function GET(request) {
             WHERE w.[PROD_DTTM] = A.[PROD_DTTM]
               AND w.[RESULT_YN] = 'Y'
           ) = 2 THEN '완료' ELSE '미완료' END AS [ASSEMBLY_COMPLETE],
-          'LIVE' as DATA_SOURCE
+          'LIVE' as DATA_SOURCE,
+          ROW_NUMBER() OVER (ORDER BY A.[PROD_DTTM] DESC, A.[COMMIT_NO] DESC) as rn
         FROM [${dbName}].[dbo].[TB_PP_RECEIVE_ALC2_DATA] A
         WHERE 1=1 ${whereConditions}
         
@@ -151,13 +163,15 @@ export async function GET(request) {
             WHERE w.[PROD_DTTM] = A.[PROD_DTTM]
               AND w.[RESULT_YN] = 'Y'
           ) = 2 THEN '완료' ELSE '미완료' END AS [ASSEMBLY_COMPLETE],
-          'BACKUP' as DATA_SOURCE
+          'BACKUP' as DATA_SOURCE,
+          ROW_NUMBER() OVER (ORDER BY A.[PROD_DTTM] DESC, A.[COMMIT_NO] DESC) + 1000000 as rn
         FROM [${dbName}].[dbo].[TB_PP_RECEIVE_ALC2_DATA_RAW] A
         WHERE 1=1 ${whereConditions}
       )
-      SELECT *
+      SELECT [PROD_DTTM], [COMMIT_NO], [BODY_NO], [BODY_TYPE], [ALC_FRONT], [ALC_REAR], [ACL_COLOR], 
+             [VIN_NO], [PROD_DATE], [EXT_COLOR], [WORK_FLAG], [ASSEMBLY_COMPLETE], [DATA_SOURCE]
       FROM CombinedData
-      ORDER BY [PROD_DTTM] DESC, [COMMIT_NO] DESC
+      ORDER BY rn
       OFFSET ${offset} ROWS
       FETCH NEXT ${chunkSize} ROWS ONLY
     `;
@@ -174,7 +188,17 @@ export async function GET(request) {
       throw new Error(`데이터 조회 실패: ${dataError.message}`);
     }
 
-    const hasMore = (offset + data.length) < totalCount;
+    // hasMore 계산 수정: totalCount가 null인 경우 대비
+    const hasMore = totalCount !== null ? (offset + data.length) < totalCount : data.length === chunkSize;
+    
+    console.log(`🔍 hasMore 계산:`, {
+      offset,
+      dataLength: data.length,
+      totalCount,
+      offsetPlusData: offset + data.length,
+      hasMore,
+      calculation: `${offset + data.length} < ${totalCount} = ${hasMore}`
+    });
     
     const response = {
       success: true,
