@@ -100,21 +100,14 @@ export async function GET(request) {
       }
     }
     
-    // 전체 카운트 쿼리
-    const countQuery = `
-      WITH CombinedData AS (
-        SELECT A.[PROD_DTTM], A.[COMMIT_NO]
-        FROM [${dbName}].[dbo].[TB_PP_RECEIVE_ALC2_DATA] A
-        WHERE 1=1 ${whereConditions}
-        
-        UNION ALL
-        
-        SELECT A.[PROD_DTTM], A.[COMMIT_NO]
-        FROM [${dbName}].[dbo].[TB_PP_RECEIVE_ALC2_DATA_RAW] A
-        WHERE 1=1 ${whereConditions}
-      )
-      SELECT COUNT(*) as totalCount FROM CombinedData
-    `;
+    // 최적화된 전체 카운트 쿼리 (첫 페이지일 때만 실행)
+    const countQuery = page === 1 ? `
+      -- 운영 테이블 카운트
+      SELECT 
+        (SELECT COUNT(*) FROM [${dbName}].[dbo].[TB_PP_RECEIVE_ALC2_DATA] A WHERE 1=1 ${whereConditions}) +
+        (SELECT COUNT(*) FROM [${dbName}].[dbo].[TB_PP_RECEIVE_ALC2_DATA_RAW] A WHERE 1=1 ${whereConditions})
+        as totalCount
+    ` : null;
     
     // 커서 기반 페이징을 위한 추가 WHERE 조건
     let cursorCondition = '';
@@ -239,18 +232,30 @@ export async function GET(request) {
     `;
     
     console.log('🔍 서열수신현황 조회 쿼리:', dataQuery);
-    console.log('📊 전체 개수 쿼리:', countQuery);
+    console.log('📊 전체 개수 쿼리:', countQuery ? '실행' : '스킵 (캐시된 데이터 사용)');
     console.log('📋 파라미터:', params);
     console.log('📄 페이징 정보:', { page, pageSize, offset });
     
-    // 전체 개수와 데이터를 병렬로 조회
-    const [countResult, dataResult] = await Promise.all([
-      dbManager.executeQuery(countQuery, params),
-      dbManager.executeQuery(dataQuery, params)
-    ]);
+    // 첫 페이지일 때만 전체 개수 조회, 아니면 데이터만 조회
+    let totalCount = 0;
+    let dataResult;
     
-    const totalCount = countResult[0]?.totalCount || 0;
-    const totalPages = Math.ceil(totalCount / pageSize);
+    if (countQuery) {
+      // 첫 페이지: 전체 개수와 데이터를 병렬로 조회
+      const [countResult, dataRes] = await Promise.all([
+        dbManager.executeQuery(countQuery, params),
+        dbManager.executeQuery(dataQuery, params)
+      ]);
+      totalCount = countResult[0]?.totalCount || 0;
+      dataResult = dataRes;
+      console.log(`📊 전체 카운트 조회 완료: ${totalCount}건`);
+    } else {
+      // 페이지 넘기기: 데이터만 조회 (훨씬 빠름)
+      dataResult = await dbManager.executeQuery(dataQuery, params);
+      console.log(`⚡ 페이지 데이터만 조회: ${dataResult.length}건`);
+    }
+    
+    const totalPages = totalCount > 0 ? Math.ceil(totalCount / pageSize) : 0;
     
     console.log(`📥 서열수신현황 조회 완료: ${dataResult.length}건 / 전체 ${totalCount}건`);
     
@@ -294,7 +299,7 @@ export async function GET(request) {
         pageSize,
         totalCount,
         totalPages,
-        hasNextPage: page < totalPages,
+        hasNextPage: dataResult.length === pageSize, // 데이터 길이로 다음 페이지 존재 여부 판단
         hasPreviousPage: page > 1
       }
     });

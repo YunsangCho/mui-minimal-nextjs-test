@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -20,6 +20,8 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
+import Backdrop from '@mui/material/Backdrop';
+import CircularProgress from '@mui/material/CircularProgress';
 
 import { useSetState } from 'src/hooks/use-set-state';
 import { useWorkspace } from 'src/contexts/workspace-context';
@@ -84,6 +86,12 @@ export function ReceiveAlc2DataInquiryViewClient() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailRow, setDetailRow] = useState(null);
   
+  // 성능 최적화: totalCount 캐시
+  const [cachedTotalCount, setCachedTotalCount] = useState(0);
+  
+  // 엑셀 다운로드 취소를 위한 ref
+  const cancelDownloadRef = useRef(false);
+  
   // 엑셀 다운로드 상태 관리
   const [downloadProgress, setDownloadProgress] = useState({
     open: false,
@@ -101,6 +109,13 @@ export function ReceiveAlc2DataInquiryViewClient() {
     new Date(filters.startDate) > new Date(filters.endDate) : false;
 
   const { receiveAlc2Data, receiveAlc2DataLoading, receiveAlc2DataEmpty, pagination } = useGetReceiveAlc2Data(searchFilters, currentSite);
+  
+  // 첫 페이지에서 totalCount 캐시 업데이트
+  useEffect(() => {
+    if (pagination?.totalCount && searchFilters.page === 1) {
+      setCachedTotalCount(pagination.totalCount);
+    }
+  }, [pagination?.totalCount, searchFilters.page]);
 
   const handleFilters = useCallback(
     (name, value) => {
@@ -113,12 +128,14 @@ export function ReceiveAlc2DataInquiryViewClient() {
     setFilters(defaultFilters);
     setSearchFilters(defaultFilters);
     setHasSearched(true);
+    setCachedTotalCount(0); // 캐시 초기화
   }, [setFilters]);
 
   const handleSearch = useCallback((serverFilters) => {
     if (currentSite) {
       setSearchFilters(serverFilters);
       setHasSearched(true);
+      setCachedTotalCount(0); // 새로운 검색 시 캐시 초기화
     }
   }, [currentSite]);
 
@@ -138,10 +155,11 @@ export function ReceiveAlc2DataInquiryViewClient() {
   }, [handlePageChange]);
 
   const handleLastPage = useCallback(() => {
-    if (pagination?.totalPages) {
-      handlePageChange(pagination.totalPages);
+    const totalPages = pagination?.totalPages || (cachedTotalCount > 0 ? Math.ceil(cachedTotalCount / (pagination?.pageSize || 25)) : 0);
+    if (totalPages > 0) {
+      handlePageChange(totalPages);
     }
-  }, [handlePageChange, pagination?.totalPages]);
+  }, [handlePageChange, pagination?.totalPages, pagination?.pageSize, cachedTotalCount]);
 
   const handlePreviousPage = useCallback(() => {
     if (pagination?.page > 1) {
@@ -169,6 +187,9 @@ export function ReceiveAlc2DataInquiryViewClient() {
     }
 
     try {
+      // 취소 상태 초기화
+      cancelDownloadRef.current = false;
+      
       setDownloadProgress({
         open: true,
         progress: 0,
@@ -189,7 +210,9 @@ export function ReceiveAlc2DataInquiryViewClient() {
       let downloadedRecords = 0;
 
       while (true) {
-        if (downloadProgress.cancelled) {
+        // ref를 사용하여 실시간 취소 상태 확인
+        if (cancelDownloadRef.current) {
+          console.log('📛 엑셀 다운로드 취소됨');
           break;
         }
         
@@ -271,7 +294,7 @@ export function ReceiveAlc2DataInquiryViewClient() {
         currentChunk++;
       }
 
-      if (!downloadProgress.cancelled) {
+      if (!cancelDownloadRef.current) {
         setDownloadProgress(prev => ({
           ...prev,
           status: 'processing',
@@ -309,10 +332,16 @@ export function ReceiveAlc2DataInquiryViewClient() {
         error: error.message
       }));
     }
-  }, [searchFilters, currentSite, downloadProgress.cancelled]);
+  }, [searchFilters, currentSite]);
 
   const handleCancelDownload = useCallback(() => {
-    setDownloadProgress(prev => ({ ...prev, cancelled: true }));
+    console.log('🛑 엑셀 다운로드 취소 요청');
+    cancelDownloadRef.current = true;
+    setDownloadProgress(prev => ({ 
+      ...prev, 
+      cancelled: true,
+      status: 'cancelled' 
+    }));
   }, []);
 
   const handleCloseDownload = useCallback(() => {
@@ -320,7 +349,8 @@ export function ReceiveAlc2DataInquiryViewClient() {
   }, []);
 
   const renderTable = () => {
-    const { totalCount } = pagination || {};
+    // 캐시된 totalCount 사용으로 페이지 넘기기 시 성능 향상
+    const totalCount = pagination?.totalCount || cachedTotalCount;
     const startRecord = totalCount > 0 ? ((pagination?.page || 1) - 1) * (pagination?.pageSize || 25) + 1 : 0;
     const endRecord = Math.min((pagination?.page || 1) * (pagination?.pageSize || 25), totalCount || 0);
 
@@ -420,16 +450,20 @@ export function ReceiveAlc2DataInquiryViewClient() {
   const renderPagination = () => {
     if (!pagination) return null;
 
-    const { page, pageSize, totalCount, totalPages, hasNextPage, hasPreviousPage } = pagination;
+    const { page, pageSize, hasNextPage, hasPreviousPage } = pagination;
+    
+    // 캐시된 totalCount 사용으로 페이징 연속성 보장
+    const displayTotalCount = pagination.totalCount || cachedTotalCount;
+    const calculatedTotalPages = displayTotalCount > 0 ? Math.ceil(displayTotalCount / pageSize) : 0;
 
-    const startRecord = totalCount > 0 ? (page - 1) * pageSize + 1 : 0;
-    const endRecord = Math.min(page * pageSize, totalCount);
+    const startRecord = displayTotalCount > 0 ? (page - 1) * pageSize + 1 : 0;
+    const endRecord = Math.min(page * pageSize, displayTotalCount);
 
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2, px: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            {`${startRecord}–${endRecord} / 전체 ${totalCount}`}
+            {`${startRecord}–${endRecord} / 전체 ${displayTotalCount}`}
           </Typography>
           <FormControlLabel
             control={<Switch checked={dense} onChange={(e) => setDense(e.target.checked)} size="small" />}
@@ -465,7 +499,7 @@ export function ReceiveAlc2DataInquiryViewClient() {
           </Tooltip>
           
           <Typography variant="body2" sx={{ mx: 2, minWidth: 60, textAlign: 'center' }}>
-            {`${page}/${totalPages}`}
+            {`${page}/${calculatedTotalPages > 0 ? calculatedTotalPages : '?'}`}
           </Typography>
           
           <Tooltip title="다음 페이지">
@@ -517,6 +551,33 @@ export function ReceiveAlc2DataInquiryViewClient() {
         onCancel={downloadProgress.status === 'downloading' ? handleCancelDownload : null}
         onClose={handleCloseDownload}
       />
+
+      {/* 조회 중 로딩 딤 처리 */}
+      <Backdrop
+        sx={{ 
+          zIndex: (theme) => theme.zIndex.modal + 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        }}
+        open={receiveAlc2DataLoading}
+      >
+        <Box 
+          sx={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            gap: 2,
+            backgroundColor: 'white',
+            padding: 3,
+            borderRadius: 2,
+            boxShadow: 2,
+          }}
+        >
+          <CircularProgress size={40} />
+          <Typography variant="body1" sx={{ color: 'text.primary' }}>
+            데이터 조회 중...
+          </Typography>
+        </Box>
+      </Backdrop>
     </Card>
   );
 }

@@ -33,6 +33,8 @@ export function ExcelDownloadProgress({
         return <CircularProgress size={24} color="warning" />;
       case 'completed':
         return <Iconify icon="solar:check-circle-bold" width={24} sx={{ color: 'success.main' }} />;
+      case 'cancelled':
+        return <Iconify icon="solar:close-circle-bold" width={24} sx={{ color: 'warning.main' }} />;
       case 'error':
         return <Iconify icon="solar:close-circle-bold" width={24} sx={{ color: 'error.main' }} />;
       default:
@@ -48,6 +50,8 @@ export function ExcelDownloadProgress({
         return 'Excel 파일 생성 중...';
       case 'completed':
         return '다운로드 완료!';
+      case 'cancelled':
+        return '다운로드 취소됨';
       case 'error':
         return '다운로드 실패';
       default:
@@ -63,6 +67,8 @@ export function ExcelDownloadProgress({
         return 'warning';
       case 'completed':
         return 'success';
+      case 'cancelled':
+        return 'warning';
       case 'error':
         return 'error';
       default:
@@ -73,22 +79,22 @@ export function ExcelDownloadProgress({
   return (
     <Modal
       open={open}
-      onClose={status === 'completed' || status === 'error' ? onClose : undefined}
+      onClose={status === 'completed' || status === 'error' || status === 'cancelled' ? onClose : undefined}
       sx={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        p: 2,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
       }}
       {...other}
     >
       <Box
         sx={{
           width: { xs: '90%', sm: 480 },
-          bgcolor: 'background.paper',
+          backgroundColor: 'white',
           borderRadius: 2,
-          boxShadow: 24,
-          p: 4,
+          boxShadow: 2,
+          p: 3,
           outline: 'none',
           position: 'relative',
         }}
