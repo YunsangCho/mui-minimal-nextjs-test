@@ -206,7 +206,7 @@ export function ReceiveAlc2DataTableToolbar({ filters, onFilters, dateError, onS
     <Paper
       elevation={0}
       sx={{
-        p: 3,
+        p: 1.5,
         m: 2,
         borderRadius: 2,
         bgcolor: 'background.neutral',
@@ -214,7 +214,7 @@ export function ReceiveAlc2DataTableToolbar({ filters, onFilters, dateError, onS
       }}
     >
       {/* 헤더 */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
         <Stack direction="row" alignItems="center" spacing={1}>
           <Iconify 
             icon="material-symbols:filter-list" 
@@ -282,17 +282,17 @@ export function ReceiveAlc2DataTableToolbar({ filters, onFilters, dateError, onS
         />
       </Stack>
 
-      <Divider sx={{ mb: 3 }} />
+      <Divider sx={{ mb: 1.5 }} />
 
       {/* 기본 조건 */}
       <Collapse in={!isDetailedSearch}>
         <Box
           sx={{
-            p: 2.5,
+            p: 1.5,
             borderRadius: 1.5,
             bgcolor: 'background.paper',
             border: (theme) => `1px solid ${theme.palette.divider}`,
-            mb: 2,
+            mb: 1,
           }}
         >
         <Stack 
@@ -721,15 +721,15 @@ export function ReceiveAlc2DataTableToolbar({ filters, onFilters, dateError, onS
       <Collapse in={isDetailedSearch}>
         <Box
           sx={{
-            p: 2.5,
+            p: 1.5,
             borderRadius: 1.5,
             bgcolor: 'background.paper',
             border: (theme) => `1px solid ${theme.palette.warning.light}`,
             borderColor: 'warning.light',
-            mb: 2,
+            mb: 1,
           }}
         >
-          <Stack spacing={3}>
+          <Stack spacing={2}>
             {/* 상세조건 안내 */}
             <Stack direction="row" alignItems="center" spacing={1}>
               <Iconify 
