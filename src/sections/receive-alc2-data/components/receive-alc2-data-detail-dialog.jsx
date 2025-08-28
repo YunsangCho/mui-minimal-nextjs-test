@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Box, Stack, Typography, Dialog, DialogTitle, DialogContent, IconButton, Chip, Tabs, Tab, Backdrop } from '@mui/material';
+import { Box, Stack, Typography, Dialog, DialogTitle, DialogContent, IconButton, Chip, Tabs, Tab, Backdrop, Button, Alert, CircularProgress } from '@mui/material';
 import { Iconify } from 'src/components/iconify';
+import { axiosInstance, endpoints } from 'src/lib/axios';
+import { useWorkspace } from 'src/contexts/workspace-context';
 
 // ------------------------------------------------------------------
 
@@ -101,16 +103,67 @@ function TabPanel({ children, value, index, ...other }) {
 }
 
 export function ReceiveAlc2DataDetailDialog({ open, onClose, row }) {
+  const { currentSite } = useWorkspace();
   const [tabValue, setTabValue] = useState(0);
+  const [retryLoading, setRetryLoading] = useState(false);
+  const [retryMessage, setRetryMessage] = useState(null);
 
   if (!row) return null;
 
   const handleClose = () => {
+    // 상태 초기화
+    setRetryMessage(null);
+    setRetryLoading(false);
+    setTabValue(0);
     onClose();
   };
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
+  };
+
+  // 작업지시 재수행 핸들러
+  const handleRetryWorkInstruction = async () => {
+    try {
+      setRetryLoading(true);
+      setRetryMessage(null);
+
+      // 파라미터 검증
+      if (!row.PROD_DTTM) {
+        throw new Error('PROD_DTTM 값이 없습니다.');
+      }
+      
+      if (!currentSite) {
+        throw new Error('현장 정보가 설정되지 않았습니다.');
+      }
+
+      // 작업지시 재수행 쿼리 실행
+      const response = await axiosInstance.post(endpoints.receiveAlc2Data.retryWorkInstruction, {
+        prodDttm: row.PROD_DTTM,
+        bodyNo: row.BODY_NO,
+        vinNo: row.VIN_NO,
+        commitNo: row.COMMIT_NO,
+        site: currentSite
+      });
+
+      if (response.data.success) {
+        setRetryMessage({
+          type: 'success',
+          text: `작업지시 재수행이 완료되었습니다. (대상: ${row.PROD_DTTM})`
+        });
+      } else {
+        throw new Error(response.data.error || '작업지시 재수행에 실패했습니다.');
+      }
+
+    } catch (error) {
+      console.error('작업지시 재수행 오류:', error);
+      setRetryMessage({
+        type: 'error',
+        text: `작업지시 재수행 중 오류가 발생했습니다: ${error.message}`
+      });
+    } finally {
+      setRetryLoading(false);
+    }
   };
 
   return (
@@ -354,6 +407,55 @@ export function ReceiveAlc2DataDetailDialog({ open, onClose, row }) {
                       {row.DATA_SOURCE === 'LIVE' ? '실시간 운영 데이터입니다.' : '백업 데이터입니다.'}
                     </Typography>
                   </Box>
+                </Box>
+
+                {/* 작업 제어 */}
+                <Box sx={{ 
+                  p: 3, 
+                  backgroundColor: 'info.lighter', 
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: 'info.light'
+                }}>
+                  <Typography variant="h6" sx={{ mb: 2, color: 'info.dark' }}>작업 제어</Typography>
+                  <Stack spacing={2}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                      작업지시를 재수행하여 처리 상태를 업데이트할 수 있습니다.
+                    </Typography>
+                    
+                    {/* 작업지시 재수행 버튼 */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Button
+                        variant="contained"
+                        color="warning"
+                        startIcon={retryLoading ? <CircularProgress size={20} color="inherit" /> : <Iconify icon="solar:refresh-bold" />}
+                        onClick={handleRetryWorkInstruction}
+                        disabled={retryLoading}
+                        sx={{ 
+                          minWidth: 160,
+                          fontWeight: 600
+                        }}
+                      >
+                        {retryLoading ? '처리 중...' : '작업지시 재수행'}
+                      </Button>
+                      
+                      {/* 대상 정보 표시 */}
+                      <Typography variant="body2" color="text.secondary">
+                        대상: {row.BODY_NO} ({row.COMMIT_NO})
+                      </Typography>
+                    </Box>
+
+                    {/* 결과 메시지 */}
+                    {retryMessage && (
+                      <Alert 
+                        severity={retryMessage.type} 
+                        sx={{ mt: 2 }}
+                        onClose={() => setRetryMessage(null)}
+                      >
+                        {retryMessage.text}
+                      </Alert>
+                    )}
+                  </Stack>
                 </Box>
               </Stack>
             </Box>

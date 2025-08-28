@@ -122,5 +122,6 @@ export const endpoints = {
     list: '/api/receive-alc2-data/list',
     bodyTypes: '/api/receive-alc2-data/body-types',
     export: '/api/receive-alc2-data/export',
+    retryWorkInstruction: '/api/receive-alc2-data/retry-work-instruction',
   },
 };
